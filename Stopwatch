@@ -1,0 +1,203 @@
+//index.html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Stopwatch</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="stopwatch-container">
+        <div class="circle-timer">
+            <svg id="circle" width="200" height="200">
+                <circle cx="100" cy="100" r="90" stroke="#61dafb" stroke-width="10" fill="none"></circle>
+                <circle cx="100" cy="100" r="90" stroke="#21a1f1" stroke-width="10" fill="none" 
+                        stroke-dasharray="565.48" stroke-dashoffset="565.48"></circle>
+            </svg>
+            <div class="time-display" id="display">00:00:00.000</div>
+        </div>
+        <div class="controls">
+            <button id="startPause">Start</button>
+            <button id="reset" disabled>Reset</button>
+            <button id="lap" disabled>Lap</button>
+            <button id="resetLap" disabled>Reset Laps</button>
+        </div>
+        <ul id="laps"></ul>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
+
+//script.js
+
+let startTime, elapsedTime = 0, intervalId;
+let running = false;
+
+const display = document.getElementById('display');
+const startPauseBtn = document.getElementById('startPause');
+const resetBtn = document.getElementById('reset');
+const lapBtn = document.getElementById('lap');
+const resetLapBtn = document.getElementById('resetLap');
+const lapsContainer = document.getElementById('laps');
+const circle = document.querySelector('svg circle:last-child');
+
+startPauseBtn.addEventListener('click', startPause);
+resetBtn.addEventListener('click', reset);
+lapBtn.addEventListener('click', recordLap);
+resetLapBtn.addEventListener('click', resetLaps);
+
+function startPause() {
+    if (!running) {
+        startTime = Date.now() - elapsedTime;
+        intervalId = setInterval(updateTime, 10);
+        startPauseBtn.textContent = 'Pause';
+        resetBtn.disabled = false;
+        lapBtn.disabled = false;
+        resetLapBtn.disabled = false;
+        running = true;
+    } else {
+        clearInterval(intervalId);
+        elapsedTime = Date.now() - startTime;
+        startPauseBtn.textContent = 'Start';
+        running = false;
+    }
+}
+
+function reset() {
+    clearInterval(intervalId);
+    elapsedTime = 0;
+    running = false;
+    display.textContent = '00:00:00.000';
+    startPauseBtn.textContent = 'Start';
+    resetBtn.disabled = true;
+    lapBtn.disabled = true;
+    resetLapBtn.disabled = true;
+    lapsContainer.innerHTML = '';
+    updateCircle(0);
+}
+
+function recordLap() {
+    const lapTime = formatTime(elapsedTime);
+    const lapItem = document.createElement('li');
+    lapItem.textContent = `Lap ${lapsContainer.children.length + 1}: ${lapTime}`;
+    lapsContainer.appendChild(lapItem);
+}
+
+function resetLaps() {
+    lapsContainer.innerHTML = '';
+}
+
+function updateTime() {
+    elapsedTime = Date.now() - startTime;
+    display.textContent = formatTime(elapsedTime);
+    updateCircle(elapsedTime);
+}
+
+function formatTime(time) {
+    const milliseconds = time % 1000;
+    const seconds = Math.floor((time / 1000) % 60);
+    const minutes = Math.floor((time / (1000 * 60)) % 60);
+    const hours = Math.floor((time / (1000 * 60 * 60)) % 24);
+
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}.${pad(milliseconds, 3)}`;
+}
+
+function pad(number, digits = 2) {
+    return String(number).padStart(digits, '0');
+}
+
+function updateCircle(time) {
+    const totalSeconds = (time / 1000) % 60;
+    const dashoffset = 565.48 - (totalSeconds / 60) * 565.48;
+    circle.style.strokeDashoffset = dashoffset;
+}
+
+//styles.css
+
+body {
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #282c34;
+    color: #ffffff;
+}
+
+.stopwatch-container {
+    text-align: center;
+    background: #444c57;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    width: 350px;
+}
+
+.circle-timer {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto 20px;
+}
+
+circle {
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+    transition: stroke-dashoffset 0.1s linear;
+}
+
+.time-display {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5em;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.controls button {
+    background-color: #61dafb;
+    color: #282c34;
+    border: none;
+    padding: 10px;
+    font-size: 1em;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    flex-grow: 1;
+}
+
+.controls button:disabled {
+    background-color: #8a929b;
+    cursor: not-allowed;
+}
+
+.controls button:hover:not(:disabled) {
+    background-color: #21a1f1;
+}
+
+#laps {
+    list-style: none;
+    padding: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#laps li {
+    background: #61dafb;
+    color: #282c34;
+    padding: 5px;
+    margin: 5px 0;
+    border-radius: 5px;
+    font-size: 1.1em;
+    text-align: left;
+}
